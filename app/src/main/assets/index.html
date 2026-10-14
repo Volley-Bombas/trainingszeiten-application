@@ -1,0 +1,982 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Trainingsnachweis</title>
+<style>
+@font-face { font-family: "Barlow"; font-style: normal; font-weight: 400; font-display: swap; src: url("fonts/barlow-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Barlow"; font-style: normal; font-weight: 500; font-display: swap; src: url("fonts/barlow-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "Barlow"; font-style: normal; font-weight: 600; font-display: swap; src: url("fonts/barlow-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Barlow"; font-style: normal; font-weight: 700; font-display: swap; src: url("fonts/barlow-latin-700-normal.woff2") format("woff2"); }
+@font-face { font-family: "Barlow Condensed"; font-style: normal; font-weight: 500; font-display: swap; src: url("fonts/barlow-condensed-latin-500-normal.woff2") format("woff2"); }
+@font-face { font-family: "Barlow Condensed"; font-style: normal; font-weight: 600; font-display: swap; src: url("fonts/barlow-condensed-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Barlow Condensed"; font-style: normal; font-weight: 700; font-display: swap; src: url("fonts/barlow-condensed-latin-700-normal.woff2") format("woff2"); }
+[hidden] { display: none !important; }
+img { max-width: 100%; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; -webkit-tap-highlight-color: transparent; overscroll-behavior-y: none; }
+button { -webkit-user-select: none; user-select: none; }
+/* Layout: Anzeigetafel (Zeitraum, Summen, Kategorien-Balken) · darunter Kalender links + Tagesblatt rechts · Zeitraum-Liste · Einstellungen */
+:root {
+  --bg: #edf0f5;
+  --surface: #ffffff;
+  --ink: #15213b;
+  --muted: #5c6880;
+  --line: #d9dee8;
+  --soft: #f4f6fa;
+  --accent: #e8711c;
+  --accent-ink: #ffffff;
+  --navy: #1a2846;
+  --navy-2: #233357;
+  --navy-ink: #f2f4f9;
+  --navy-muted: #a5b1c8;
+  --ok: #1f8a55; --ok-bg: #e0f2e8;
+  --warn: #9d5500; --warn-bg: #fdecd6;
+  --bad: #b3261e; --bad-bg: #fbe3e1;
+  --shadow: 0 1px 2px rgba(21,33,59,.06), 0 6px 20px rgba(21,33,59,.06);
+  --font-display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --font-body: "Barlow", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0d1320; --surface: #161f31; --ink: #e7ebf3; --muted: #92a0b8; --line: #283450; --soft: #1b263c;
+    --accent: #f28b3d; --accent-ink: #1b1207; --navy: #0a111f; --navy-2: #131d33; --navy-ink: #eef1f7; --navy-muted: #8592ab;
+    --ok: #62d09a; --ok-bg: #133022; --warn: #f3b562; --warn-bg: #382810; --bad: #f2897f; --bad-bg: #3a1917;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.25);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0d1320; --surface: #161f31; --ink: #e7ebf3; --muted: #92a0b8; --line: #283450; --soft: #1b263c;
+  --accent: #f28b3d; --accent-ink: #1b1207; --navy: #0a111f; --navy-2: #131d33; --navy-ink: #eef1f7; --navy-muted: #8592ab;
+  --ok: #62d09a; --ok-bg: #133022; --warn: #f3b562; --warn-bg: #382810; --bad: #f2897f; --bad-bg: #3a1917;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.25);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45; }
+.wrap { max-width: 1160px; margin: 0 auto; padding-block: 20px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 18px; }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 700; margin: 0; text-wrap: balance; letter-spacing: .01em; }
+.label { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; font-weight: 600; color: var(--muted); }
+.num { font-variant-numeric: tabular-nums; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.notice { background: var(--warn-bg); color: var(--warn); border-radius: 10px; padding: 10px 14px; font-weight: 500; }
+
+/* Kopf */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.brand > div { min-width: 0; }
+.brand svg { width: 38px; height: 38px; color: var(--accent); flex: none; }
+.brand h1 { font-size: 30px; text-transform: uppercase; line-height: 1; }
+.brand .sub { color: var(--muted); font-size: 14px; }
+
+/* Anzeigetafel */
+.board { background: linear-gradient(160deg, var(--navy-2), var(--navy) 60%); color: var(--navy-ink); border-radius: 18px; padding: 20px 22px 22px; display: grid; gap: 18px; position: relative; overflow: hidden; box-shadow: var(--shadow); }
+.board::before { content: ""; position: absolute; inset: auto -80px -120px auto; width: 300px; height: 300px; border-radius: 50%; border: 2px solid color-mix(in srgb, var(--navy-ink) 7%, transparent); box-shadow: 0 0 0 40px color-mix(in srgb, var(--navy-ink) 3%, transparent); pointer-events: none; }
+.board > * { position: relative; }
+.period-nav { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.navbtn { width: 38px; height: 38px; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--navy-ink) 22%, transparent); background: transparent; color: var(--navy-ink); display: grid; place-items: center; flex: none; }
+.navbtn:hover { background: color-mix(in srgb, var(--navy-ink) 10%, transparent); }
+.navbtn svg { width: 16px; height: 16px; }
+.period-title { flex: 1; min-width: 0; }
+.period-title .label { color: var(--navy-muted); }
+.period-title h2 { font-size: 30px; line-height: 1.05; }
+.chips { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px; border-radius: 999px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.chip.ok { background: var(--ok-bg); color: var(--ok); }
+.chip.warn { background: var(--warn-bg); color: var(--warn); }
+.chip.bad { background: var(--bad-bg); color: var(--bad); }
+.chip.info { background: color-mix(in srgb, var(--navy-ink) 13%, transparent); color: var(--navy-ink); }
+.linkbtn { background: none; border: 0; color: var(--navy-muted); text-decoration: underline; padding: 0; font-size: 13px; }
+.board-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.stat { border-top: 2px solid color-mix(in srgb, var(--navy-ink) 16%, transparent); padding-top: 8px; }
+.stat.hl { border-top-color: var(--accent); }
+.stat { min-width: 0; }
+.stat .label { color: var(--navy-muted); }
+.stat .val { font-family: var(--font-display); font-weight: 700; font-size: clamp(30px, 7.5vw, 54px); line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 4px; }
+.stat .val small { font-size: 18px; font-weight: 600; margin-left: 3px; color: var(--navy-muted); }
+.stat.hl .val { color: var(--accent); }
+.mix { display: grid; gap: 10px; min-width: 0; }
+.mixbar { display: flex; height: 12px; border-radius: 999px; overflow: hidden; background: color-mix(in srgb, var(--navy-ink) 10%, transparent); gap: 2px; }
+.mixbar i { display: block; height: 100%; }
+.legend { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 32px; }
+.lg { display: grid; grid-template-columns: 10px minmax(0, 1fr) auto; gap: 8px; align-items: center; font-size: 14px; }
+.lg .sw { width: 10px; height: 10px; border-radius: 3px; }
+.lg .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lg .h { font-variant-numeric: tabular-nums; color: var(--navy-muted); }
+.lg .h b { color: var(--navy-ink); font-weight: 600; }
+.lg.zero { opacity: .45; }
+.board-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn-dark { border: 1px solid color-mix(in srgb, var(--navy-ink) 24%, transparent); background: transparent; color: var(--navy-ink); border-radius: 9px; padding: 8px 13px; font-weight: 600; font-size: 14px; display: inline-flex; gap: 7px; align-items: center; }
+.btn-dark svg { width: 15px; height: 15px; }
+.btn-dark:hover { background: color-mix(in srgb, var(--navy-ink) 10%, transparent); }
+.btn-dark.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.btn-dark.primary:hover { background: var(--accent); filter: brightness(1.06); }
+.btn-dark:disabled { opacity: .6; cursor: progress; }
+.btn-dark.on { background: var(--ok-bg); color: var(--ok); border-color: transparent; }
+.copybox { width: 100%; min-height: 150px; border: 0; border-radius: 10px; background: var(--surface); color: var(--ink); padding: 10px; font-size: 13px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+/* Kalender + Tagesblatt */
+.main { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); min-width: 0; }
+.cal { padding: 16px 16px 18px; display: grid; gap: 12px; }
+.cal-head { display: flex; align-items: center; gap: 8px; }
+.cal-head h3 { font-size: 26px; text-transform: uppercase; flex: 1; min-width: 0; }
+.cal-head h3 span { color: var(--muted); font-weight: 600; }
+.ibtn { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); display: grid; place-items: center; flex: none; }
+.ibtn:hover { background: var(--soft); }
+.ibtn svg { width: 16px; height: 16px; }
+.tbtn { height: 36px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); padding: 0 12px; font-weight: 600; font-size: 14px; }
+.tbtn:hover { background: var(--soft); }
+.grid7 { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.wdh { text-align: center; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding-bottom: 2px; }
+.wdh.we { color: color-mix(in srgb, var(--muted) 70%, var(--accent)); }
+.day { position: relative; aspect-ratio: 1 / 0.92; min-height: 54px; border-radius: 12px; border: 1px solid var(--line); background: var(--soft); padding: 7px 7px 8px; display: flex; flex-direction: column; align-items: stretch; text-align: left; gap: 2px; transition: border-color .12s, transform .12s; max-width: 100%; }
+.day:hover { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); }
+.day .dn { font-family: var(--font-display); font-weight: 600; font-size: 19px; line-height: 1; }
+.day .dh { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: auto; }
+.day .bars { display: flex; gap: 2px; height: 5px; border-radius: 3px; overflow: hidden; }
+.day .bars i { display: block; height: 100%; }
+.day.out { background: transparent; border-style: dashed; color: var(--muted); }
+.day.out .dn { font-weight: 500; }
+.day.om { opacity: .45; }
+.day.today .dn { color: var(--accent); }
+.day.today::after { content: "Heute"; position: absolute; top: 8px; right: 8px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); }
+.day.sel { border: 2px solid var(--accent); padding: 6px 6px 7px; background: var(--surface); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 16%, transparent); }
+.day.has { background: var(--surface); }
+.cal-foot { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; color: var(--muted); align-items: center; }
+.cal-foot .key { display: inline-flex; gap: 6px; align-items: center; }
+.cal-foot .key i { width: 14px; height: 14px; border-radius: 4px; border: 1px solid var(--line); background: var(--soft); display: inline-block; }
+.cal-foot .key i.dash { background: transparent; border-style: dashed; }
+
+.sheet { padding: 18px; display: grid; gap: 16px; position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); }
+.sheet-head .label { color: var(--accent); }
+.sheet-head h3 { font-size: 26px; line-height: 1.05; }
+.sheet-head .tot { color: var(--muted); font-size: 14px; }
+.dlist { display: grid; gap: 8px; }
+.dentry { display: grid; grid-template-columns: 4px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 9px 8px 9px 0; border-radius: 10px; background: var(--soft); }
+.dentry.editing { outline: 2px solid var(--accent); }
+.dentry .stripe { align-self: stretch; border-radius: 0 3px 3px 0; }
+.dentry .t1 { font-weight: 600; overflow-wrap: anywhere; }
+.dentry .t2 { font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.dentry .r { display: flex; align-items: center; gap: 2px; }
+.dentry .h { font-family: var(--font-display); font-weight: 700; font-size: 20px; margin-right: 4px; font-variant-numeric: tabular-nums; }
+.icon { width: 32px; height: 32px; border-radius: 8px; border: 0; background: transparent; color: var(--muted); display: grid; place-items: center; }
+.icon:hover { background: var(--surface); color: var(--ink); }
+.icon.del:hover { color: var(--bad); }
+.icon svg { width: 16px; height: 16px; }
+.confirm { display: flex; gap: 6px; align-items: center; font-size: 13px; }
+.confirm button { border-radius: 7px; padding: 5px 10px; font-weight: 600; font-size: 13px; border: 1px solid var(--line); background: var(--surface); }
+.confirm .yes { background: var(--bad); color: #fff; border-color: var(--bad); }
+.dempty { font-size: 14px; color: var(--muted); padding: 10px 12px; border: 1px dashed var(--line); border-radius: 10px; }
+
+.form { display: grid; gap: 14px; border-top: 1px solid var(--line); padding-top: 16px; }
+.form h4 { margin: 0; font-size: 15px; font-weight: 700; }
+.field { display: grid; gap: 7px; }
+.katpick { display: flex; flex-wrap: wrap; gap: 6px; }
+.katpick input, .durpick input { position: absolute; opacity: 0; pointer-events: none; }
+.katpick label { display: inline-flex; align-items: center; gap: 7px; padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); font-size: 14px; font-weight: 600; cursor: pointer; background: var(--surface); }
+.katpick label i { width: 9px; height: 9px; border-radius: 50%; }
+.katpick input:checked + label { border-color: var(--c); background: color-mix(in srgb, var(--c) 16%, var(--surface)); }
+.katpick input:focus-visible + label, .durpick input:focus-visible + label { outline: 2px solid var(--accent); outline-offset: 2px; }
+.durpick { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.durpick label { text-align: center; padding: 9px 0; border-radius: 10px; border: 1px solid var(--line); background: var(--soft); font-family: var(--font-display); font-weight: 600; font-size: 18px; cursor: pointer; font-variant-numeric: tabular-nums; }
+.durpick label small { font-family: var(--font-body); font-size: 11px; font-weight: 600; color: var(--muted); margin-left: 1px; }
+.durpick input:checked + label { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.durpick input:checked + label small { color: inherit; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.custom { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 14px; color: var(--muted); }
+.custom input { width: 90px; }
+input[type="time"], input[type="text"], input[type="number"], select {
+  width: 100%; min-width: 0; height: 42px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--soft);
+}
+input:focus, select:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent); }
+.toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; cursor: pointer; user-select: none; }
+.toggle input { width: 18px; height: 18px; accent-color: var(--accent); }
+.err { color: var(--bad); font-size: 13px; font-weight: 600; }
+.btn { border: 0; border-radius: 11px; height: 46px; padding: 0 18px; font-weight: 700; font-size: 15px; }
+.btn.primary { background: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { filter: brightness(1.05); }
+.btn.secondary { background: var(--soft); border: 1px solid var(--line); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.form-actions { display: flex; gap: 8px; }
+.form-actions .primary { flex: 1; }
+
+/* Zeitraum-Liste */
+.plist { padding: 16px 18px 18px; display: grid; gap: 10px; }
+.plist-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.plist-head h3 { font-size: 22px; text-transform: uppercase; }
+.tscroll { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 520px; }
+th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+td { padding: 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+td.r, th.r { text-align: right; font-variant-numeric: tabular-nums; }
+tr.click { cursor: pointer; }
+tr.click:hover td { background: var(--soft); }
+.kt { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+.kt i { width: 8px; height: 8px; border-radius: 50%; }
+tfoot td { font-weight: 700; border-bottom: 0; }
+
+/* Einstellungen */
+details.settings { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 0 18px; }
+details.settings summary { padding: 15px 0; cursor: pointer; font-weight: 700; }
+.settings-body { display: grid; gap: 22px; padding-bottom: 20px; }
+.hint { font-size: 13px; color: var(--muted); }
+.katrows { display: grid; gap: 8px; }
+.katrow { display: grid; grid-template-columns: auto minmax(0, 1fr) 130px auto; gap: 8px; align-items: center; }
+.swatches { display: flex; gap: 4px; }
+.swatches button { width: 22px; height: 22px; border-radius: 6px; border: 2px solid transparent; padding: 0; }
+.swatches button[aria-pressed="true"] { border-color: var(--ink); }
+.ratewrap { position: relative; }
+.ratewrap span { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 13px; pointer-events: none; }
+.ratewrap input { padding-right: 46px; }
+.addkat { justify-self: start; border: 1px dashed var(--line); background: transparent; border-radius: 10px; padding: 8px 14px; font-weight: 600; color: var(--muted); }
+.addkat:hover { color: var(--ink); border-color: var(--accent); }
+
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%) translateY(16px); background: var(--ink); color: var(--surface); padding: 10px 16px; border-radius: 10px; font-weight: 600; opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; max-width: calc(100% - 32px); z-index: 10; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+@media (max-width: 900px) {
+  .main { grid-template-columns: minmax(0, 1fr); }
+  .sheet { position: static; }
+  .board-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 560px) {
+  .legend { grid-template-columns: minmax(0, 1fr); }
+  .brand h1 { font-size: 24px; }
+  .brand svg { width: 32px; height: 32px; }
+  .period-title h2 { font-size: 24px; }
+  .stats { gap: 10px; }
+  .board { padding: 16px 16px 18px; }
+  .grid7 { gap: 4px; }
+  .day { padding: 5px 4px 6px; border-radius: 9px; min-height: 46px; aspect-ratio: 1 / 1.05; }
+  .day.sel { padding: 4px 3px 5px; }
+  .day .dn { font-size: 16px; }
+  .day .dh { font-size: 11px; }
+  .day.today::after { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); top: 6px; right: 6px; }
+  .cal { padding: 12px 10px 14px; }
+  .durpick { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .katrow { grid-template-columns: minmax(0, 1fr) 110px auto; }
+  .katrow .swatches { grid-column: 1 / -1; }
+}
+@media (prefers-reduced-motion: reduce) { .toast, .day { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="17" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M20 3c-5 7-5 15 0 17M20 20c7-3 14-1 17 4M20 20c-2 7-8 12-15 11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+      <div>
+        <h1>Trainingsnachweis</h1>
+        <div class="sub">Abrechnung quartalsweise zum 15.</div>
+      </div>
+    </div>
+  </header>
+
+  <div id="notice" class="notice" hidden></div>
+
+  <section class="board" aria-label="Abrechnungszeitraum">
+    <div class="period-nav">
+      <button class="navbtn" id="prevP" type="button" aria-label="Vorheriger Zeitraum"><svg viewBox="0 0 16 16"><path d="M10 3L5 8l5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="period-title">
+        <div class="label">Abrechnungszeitraum</div>
+        <h2 class="num" id="pLabel">–</h2>
+      </div>
+      <button class="navbtn" id="nextP" type="button" aria-label="Nächster Zeitraum"><svg viewBox="0 0 16 16"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    </div>
+    <div class="chips">
+      <span id="pChip" class="chip info">–</span>
+      <button id="toToday" class="linkbtn" type="button" hidden>Zum aktuellen Zeitraum</button>
+    </div>
+    <div class="board-grid">
+      <div class="stats">
+        <div class="stat hl"><div class="label">Stunden</div><div class="val" id="sH">0</div></div>
+        <div class="stat"><div class="label">Einheiten</div><div class="val" id="sN">0</div></div>
+        <div class="stat"><div class="label">Betrag</div><div class="val" id="sA">–</div></div>
+      </div>
+      <div class="mix">
+        <div class="mixbar" id="mixbar" aria-hidden="true"></div>
+        <div class="legend" id="legend"></div>
+      </div>
+    </div>
+    <div class="board-actions">
+      <button class="btn-dark primary" id="pdfShare" type="button"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="12" cy="3.5" r="1.8" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="8" r="1.8" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12.5" r="1.8" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5.6 7.1l4.8-2.7M5.6 8.9l4.8 2.7" stroke="currentColor" stroke-width="1.5"/></svg>PDF teilen</button>
+      <button class="btn-dark" id="pdfBtn" type="button"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 1.5h5.5L13 5v9.5H4z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9.5 1.5V5H13M6.5 9h4M6.5 11.5h4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>PDF speichern</button>
+      <button class="btn-dark" id="csvBtn" type="button"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2v8M4.5 6.5L8 10l3.5-3.5M3 13h10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>CSV speichern</button>
+      <button class="btn-dark" id="copyBtn" type="button"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5" y="5" width="8" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M3 11V3.5A1.5 1.5 0 014.5 2H10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>Als Text kopieren</button>
+      <button class="btn-dark" id="doneBtn" type="button">Als abgerechnet markieren</button>
+    </div>
+    <textarea id="copyFallback" class="copybox" hidden readonly aria-label="Zusammenfassung zum Kopieren"></textarea>
+  </section>
+
+  <div class="main">
+    <section class="card cal" aria-label="Kalender">
+      <div class="cal-head">
+        <h3 id="calTitle">–</h3>
+        <button class="tbtn" id="calToday" type="button">Heute</button>
+        <button class="ibtn" id="calPrev" type="button" aria-label="Vorheriger Monat"><svg viewBox="0 0 16 16"><path d="M10 3L5 8l5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+        <button class="ibtn" id="calNext" type="button" aria-label="Nächster Monat"><svg viewBox="0 0 16 16"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      </div>
+      <div class="grid7" id="calWd"></div>
+      <div class="grid7" id="calGrid"></div>
+      <div class="cal-foot">
+        <span class="key"><i></i>im Abrechnungszeitraum</span>
+        <span class="key"><i class="dash"></i>außerhalb</span>
+        <span>Tag antippen, um Stunden einzutragen</span>
+      </div>
+    </section>
+
+    <section class="card sheet" aria-label="Ausgewählter Tag">
+      <div class="sheet-head">
+        <div class="label" id="dWd">–</div>
+        <h3 id="dTitle">–</h3>
+        <div class="tot num" id="dTot"></div>
+      </div>
+      <div class="dlist" id="dList"></div>
+
+      <form class="form" id="form" novalidate>
+        <h4 id="formTitle">Einheit hinzufügen</h4>
+        <div class="field">
+          <span class="label">Kategorie</span>
+          <div class="katpick" id="katPick" role="radiogroup" aria-label="Kategorie"></div>
+        </div>
+        <div class="field">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+            <span class="label">Dauer</span>
+            <label class="toggle"><input type="checkbox" id="useTime"> Uhrzeit angeben</label>
+          </div>
+          <div id="durBox">
+            <div class="durpick" id="durPick" role="radiogroup" aria-label="Dauer"></div>
+            <div class="custom" style="margin-top:8px"><label for="fCustom">oder</label><input type="number" id="fCustom" min="0.25" max="16" step="0.25" inputmode="decimal" placeholder="Std"><span>Stunden</span></div>
+          </div>
+          <div id="timeBox" class="row2" hidden>
+            <div class="field"><label class="label" for="fStart">Beginn</label><input type="time" id="fStart" step="300"></div>
+            <div class="field"><label class="label" for="fEnd">Ende</label><input type="time" id="fEnd" step="300"></div>
+          </div>
+        </div>
+        <div class="field">
+          <label class="label" for="fNote">Notiz <span style="text-transform:none;letter-spacing:0;font-weight:400">(optional)</span></label>
+          <input type="text" id="fNote" maxlength="160" placeholder="z. B. U14, Annahme & Aufschlag">
+        </div>
+        <div class="err" id="fErr" hidden></div>
+        <div class="form-actions">
+          <button class="btn primary" type="submit" id="saveBtn">Eintragen</button>
+          <button class="btn secondary" type="button" id="cancelEdit" hidden>Abbrechen</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <section class="card plist" aria-label="Alle Einträge im Zeitraum">
+    <div class="plist-head">
+      <h3>Alle Einträge im Zeitraum</h3>
+      <span class="hint" id="plistHint"></span>
+    </div>
+    <div class="tscroll" id="pTable"></div>
+  </section>
+
+  <details class="settings" id="settings">
+    <summary>Einstellungen · Kategorien &amp; Zeitraum</summary>
+    <div class="settings-body">
+      <div class="field">
+        <span class="label">Kategorien</span>
+        <span class="hint">Name, Farbe und optional ein Stundensatz. Ohne Stundensatz zählen nur die Stunden.</span>
+        <div class="katrows" id="katRows"></div>
+        <button type="button" class="addkat" id="addKat">+ Kategorie hinzufügen</button>
+      </div>
+      <div class="field">
+        <span class="label">Datensicherung</span>
+        <span class="hint">Deine Einträge liegen nur auf diesem Gerät. Speichere ab und zu ein Backup, z. B. in Google Drive. Beim Laden werden Einträge ergänzt, nichts wird gelöscht.</span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button type="button" class="btn secondary" id="bkSave">Backup speichern</button>
+          <button type="button" class="btn secondary" id="bkLoad">Backup laden</button>
+          <input type="file" id="bkFile" accept="application/json,.json" hidden>
+        </div>
+      </div>
+      <div class="row2" style="max-width:720px">
+        <div class="field"><label class="label" for="sName">Name (für das PDF)</label><input type="text" id="sName" maxlength="80" placeholder="Vor- und Nachname"></div>
+        <div class="field"><label class="label" for="sVerein">Verein / Abteilung</label><input type="text" id="sVerein" maxlength="80" placeholder="z. B. Volleyball-Abteilung"></div>
+      </div>
+      <div class="field" style="max-width:520px">
+        <label class="label" for="sMode">Abrechnungszeitraum</label>
+        <select id="sMode">
+          <option value="A">16. bis 15. (endet 15.01. / 15.04. / 15.07. / 15.10.)</option>
+          <option value="B">Kalenderquartal, Abrechnung bis zum 15. danach</option>
+        </select>
+      </div>
+    </div>
+  </details>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  "use strict";
+  // ---------- Hilfen ----------
+  const WD = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"];
+  const WDS = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+  const MON = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+  const SWATCH = ["#E8711C", "#2F7DD1", "#2E9E6A", "#8A5CD0", "#D2483E", "#1F9AA8", "#C99A16", "#7A8699"];
+  const DURS = [1, 1.5, 2, 2.5, 3, 4];
+  const DEFAULT_KATS = [
+    { id: "jugend", name: "Jugendtraining", farbe: "#E8711C", satz: null },
+    { id: "eigen", name: "Eigenes Training", farbe: "#2F7DD1", satz: null },
+    { id: "spiel", name: "Spieltag / Turnier", farbe: "#2E9E6A", satz: null },
+    { id: "fortb", name: "Fortbildung", farbe: "#8A5CD0", satz: null }
+  ];
+  const pad = n => String(n).padStart(2, "0");
+  const iso = (y, m, d) => `${y}-${pad(m)}-${pad(d)}`;
+  const parse = s => s.split("-").map(Number);
+  const toDate = s => { const [y, m, d] = parse(s); return new Date(y, m - 1, d, 12); };
+  const fromDate = dt => iso(dt.getFullYear(), dt.getMonth() + 1, dt.getDate());
+  const addDays = (s, n) => { const dt = toDate(s); dt.setDate(dt.getDate() + n); return fromDate(dt); };
+  const todayIso = () => fromDate(new Date());
+  const fmtD = s => { const [y, m, d] = parse(s); return `${pad(d)}.${pad(m)}.${y}`; };
+  const fmtDs = s => { const [, m, d] = parse(s); return `${pad(d)}.${pad(m)}.`; };
+  const dayDiff = (a, b) => Math.round((toDate(b) - toDate(a)) / 86400000);
+  const mins = t => { if (!t) return NaN; const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+  const nfH = new Intl.NumberFormat("de-DE", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  const nf1 = new Intl.NumberFormat("de-DE", { minimumFractionDigits: 1, maximumFractionDigits: 2 });
+  const eur = new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" });
+  const eur0 = new Intl.NumberFormat("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const H = m => nfH.format(m / 60);
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const safeColor = c => /^#[0-9a-fA-F]{6}$/.test(c || "") ? c : "#7A8699";
+  const dur = e => { if (typeof e.dauer === "number" && e.dauer > 0) return e.dauer; const d = mins(e.ende) - mins(e.beginn); return d > 0 ? d : 0; };
+  const katOf = e => e.kat || e.art || "jugend";
+
+  // ---------- Zeitraum ----------
+  function periodFor(dIso, mode) {
+    const [y, m] = parse(dIso);
+    if (mode === "B") {
+      const q = Math.floor((m - 1) / 3), sm = q * 3 + 1, em = q * 3 + 3;
+      const last = new Date(y, em, 0).getDate();
+      const dy = q === 3 ? y + 1 : y, dm = q === 3 ? 1 : em + 1;
+      return { key: `B-${y}-Q${q + 1}`, start: iso(y, sm, 1), end: iso(y, em, last), deadline: iso(dy, dm, 15), label: `${q + 1}. Quartal ${y}` };
+    }
+    const ends = [[y - 1, 10], [y, 1], [y, 4], [y, 7], [y, 10], [y + 1, 1]].map(([yy, mm]) => iso(yy, mm, 15));
+    const i = ends.findIndex(e => e >= dIso);
+    const end = ends[i], start = addDays(ends[i - 1], 1);
+    return { key: `A-${end}`, start, end, deadline: end, label: `${fmtDs(start)}–${fmtD(end)}` };
+  }
+
+  // ---------- Zustand ----------
+  let entries = [];
+  let settings = { modus: "A", kategorien: DEFAULT_KATS.map(k => ({ ...k })), abgerechnet: {} };
+  let sel = todayIso();
+  let view = { y: toDate(sel).getFullYear(), m: toDate(sel).getMonth() + 1 };
+  let editingId = null, confirmId = null, readOnly = false;
+  let form = { kat: "jugend", dauer: 90, custom: "", useTime: false, beginn: "17:00", ende: "18:30", notiz: "" };
+  const period = () => periodFor(sel, settings.modus);
+  const kats = () => settings.kategorien && settings.kategorien.length ? settings.kategorien : DEFAULT_KATS;
+  const katById = id => kats().find(k => k.id === id) || { id, name: "Unbekannt", farbe: "#7A8699", satz: null };
+
+  // ---------- Speicher ----------
+  const LS_E = "tn_einheiten", LS_S = "tn_einstellungen";
+  const NATIVE = window.Android || null;
+  const lsRaw = k => { try { return NATIVE ? NATIVE.load(k) : localStorage.getItem(k); } catch (e) { return null; } };
+  const lsGet = (k, d) => { try { const v = lsRaw(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } };
+  const lsSet = (k, v) => { try { const t = JSON.stringify(v); if (NATIVE) NATIVE.store(k, t); else localStorage.setItem(k, t); } catch (e) { toast("Speichern fehlgeschlagen."); } };
+  let store = null;
+
+  function normSettings(d) {
+    return {
+      modus: d.modus === "B" ? "B" : "A",
+      kategorien: Array.isArray(d.kategorien) && d.kategorien.length ? d.kategorien.map(k => ({ id: String(k.id), name: String(k.name || "Kategorie"), farbe: safeColor(k.farbe), satz: typeof k.satz === "number" && k.satz > 0 ? k.satz : null })) : DEFAULT_KATS.map(k => ({ ...k })),
+      abgerechnet: Object.assign({}, d.abgerechnet || {}),
+      name: String(d.name || ""),
+      verein: String(d.verein || "")
+    };
+  }
+  const localStore = {
+    start() { entries = lsGet(LS_E, []); settings = normSettings(lsGet(LS_S, {})); applySettings(); render(); },
+    async put(e) { const i = entries.findIndex(x => x.id === e.id); if (i >= 0) entries[i] = e; else entries.push(e); lsSet(LS_E, entries); render(); },
+    async remove(id) { entries = entries.filter(x => x.id !== id); lsSet(LS_E, entries); render(); },
+    async saveSettings() { lsSet(LS_S, settings); }
+  };
+  function dbStore(db) {
+    let chain = Promise.resolve();
+    return {
+      start() {
+        db.collection("einheiten").onSnapshot(snap => {
+          entries = snap.docs.filter(d => d.exists).map(d => Object.assign({ id: d.id }, d.data()));
+          render();
+        }, () => showNotice("Die Einträge konnten nicht geladen werden. Lade die Seite neu."));
+        db.doc("einstellungen/app").onSnapshot(snap => {
+          if (snap.exists && !snap.metadata.hasPendingWrites && !Object.values(nameTimers).concat(Object.values(rateTimers)).some(Boolean)) { settings = normSettings(snap.data()); applySettings(); render(); }
+        }, () => {});
+      },
+      async put(e) { const { id, ...body } = e; await db.collection("einheiten").doc(id).set(body); },
+      async remove(id) { await db.collection("einheiten").doc(id).delete(); },
+      saveSettings() { const body = JSON.parse(JSON.stringify(settings)); chain = chain.catch(() => {}).then(() => db.doc("einstellungen/app").set(body)); return chain; }
+    };
+  }
+  function handleWriteError(err) {
+    if (err && err.code === "invalid_argument") { setReadOnly(true); toast("Nur Ansicht: Änderungen speichert nur der Besitzer."); }
+    else if (err && err.code === "quota_exceeded") toast("Speicher voll. Alte Einträge löschen und erneut versuchen.");
+    else toast("Speichern fehlgeschlagen. Bitte erneut versuchen.");
+  }
+  async function saveSettings(msg) { try { await store.saveSettings(); if (msg) toast(msg); } catch (x) { handleWriteError(x); } }
+  function showNotice(t) { const n = $("notice"); n.textContent = t; n.hidden = false; }
+  function setReadOnly(v) {
+    readOnly = v;
+    if (v) showNotice("Nur Ansicht: Du siehst die Einträge, kannst sie aber nicht ändern.");
+    $("form").hidden = v; $("doneBtn").hidden = v; $("settings").hidden = v;
+    render();
+  }
+
+  // ---------- Kalender ----------
+  function renderWeekdays() {
+    $("calWd").innerHTML = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((d, i) => `<div class="wdh${i > 4 ? " we" : ""}">${d}</div>`).join("");
+  }
+  function dayMap() {
+    const map = {};
+    entries.forEach(e => { (map[e.datum] = map[e.datum] || []).push(e); });
+    return map;
+  }
+  function renderCalendar(map) {
+    const p = period(), t = todayIso();
+    $("calTitle").innerHTML = `${MON[view.m - 1]} <span>${view.y}</span>`;
+    const first = new Date(view.y, view.m - 1, 1, 12);
+    const off = (first.getDay() + 6) % 7;
+    const startIso = addDays(fromDate(first), -off);
+    const daysInMonth = new Date(view.y, view.m, 0).getDate();
+    const cells = Math.ceil((off + daysInMonth) / 7) * 7;
+    const g = $("calGrid"); g.innerHTML = "";
+    for (let i = 0; i < cells; i++) {
+      const d = addDays(startIso, i); const [yy, mm, dd] = parse(d);
+      const list = map[d] || [];
+      const b = document.createElement("button"); b.type = "button";
+      const inP = d >= p.start && d <= p.end;
+      b.className = "day" + (inP ? "" : " out") + (mm !== view.m ? " om" : "") + (d === t ? " today" : "") + (d === sel ? " sel" : "") + (list.length ? " has" : "");
+      const total = list.reduce((s, e) => s + dur(e), 0);
+      const byK = {}; list.forEach(e => { byK[katOf(e)] = (byK[katOf(e)] || 0) + dur(e); });
+      const bars = Object.entries(byK).map(([k, m]) => `<i style="background:${safeColor(katById(k).farbe)};flex:${m}"></i>`).join("");
+      b.innerHTML = `<span class="dn num">${dd}</span>${total ? `<span class="dh">${H(total)} h</span><span class="bars">${bars}</span>` : ""}`;
+      b.setAttribute("aria-label", `${WD[toDate(d).getDay()]}, ${dd}. ${MON[mm - 1]} ${yy}${total ? `, ${H(total)} Stunden` : ""}`);
+      if (d === sel) b.setAttribute("aria-current", "date");
+      b.addEventListener("click", () => selectDay(d));
+      g.appendChild(b);
+    }
+  }
+  function selectDay(d, keepView) {
+    sel = d; confirmId = null;
+    if (editingId) resetForm();
+    if (!keepView) { const dt = toDate(d); view = { y: dt.getFullYear(), m: dt.getMonth() + 1 }; }
+    $("fErr").hidden = true;
+    render();
+  }
+  $("calPrev").addEventListener("click", () => { view.m--; if (view.m < 1) { view.m = 12; view.y--; } render(); });
+  $("calNext").addEventListener("click", () => { view.m++; if (view.m > 12) { view.m = 1; view.y++; } render(); });
+  $("calToday").addEventListener("click", () => selectDay(todayIso()));
+
+  // ---------- Tagesblatt ----------
+  function renderSheet(map) {
+    const dt = toDate(sel); const list = (map[sel] || []).slice().sort((a, b) => (a.beginn || "99").localeCompare(b.beginn || "99"));
+    $("dWd").textContent = WD[dt.getDay()] + (sel === todayIso() ? " · Heute" : "");
+    $("dTitle").textContent = `${dt.getDate()}. ${MON[dt.getMonth()]} ${dt.getFullYear()}`;
+    const tot = list.reduce((s, e) => s + dur(e), 0);
+    $("dTot").textContent = list.length ? `${list.length} ${list.length === 1 ? "Einheit" : "Einheiten"} · ${H(tot)} Stunden` : "";
+    const box = $("dList"); box.innerHTML = "";
+    if (!list.length) { box.innerHTML = `<div class="dempty">An diesem Tag ist noch nichts eingetragen.</div>`; return; }
+    list.forEach(e => {
+      const k = katById(katOf(e));
+      const row = document.createElement("div"); row.className = "dentry" + (e.id === editingId ? " editing" : "");
+      const time = e.beginn && e.ende ? `${e.beginn}–${e.ende}` : "";
+      const sub = [time, e.notiz].filter(Boolean).map(esc).join(" · ");
+      row.innerHTML = `<span class="stripe" style="background:${safeColor(k.farbe)}"></span><div style="min-width:0"><div class="t1">${esc(k.name)}</div>${sub ? `<div class="t2">${sub}</div>` : ""}</div><div class="r"></div>`;
+      const r = row.querySelector(".r");
+      if (confirmId === e.id) {
+        r.innerHTML = `<div class="confirm"><span>Löschen?</span><button type="button" class="yes">Ja</button><button type="button" class="no">Nein</button></div>`;
+        r.querySelector(".yes").addEventListener("click", async () => { confirmId = null; try { await store.remove(e.id); if (editingId === e.id) resetForm(); toast("Einheit gelöscht"); } catch (x) { handleWriteError(x); } render(); });
+        r.querySelector(".no").addEventListener("click", () => { confirmId = null; render(); });
+      } else {
+        r.innerHTML = `<span class="h">${H(dur(e))}<small style="font-size:12px;font-weight:600;color:var(--muted)"> h</small></span>`;
+        if (!readOnly) {
+          const ed = document.createElement("button"); ed.type = "button"; ed.className = "icon"; ed.setAttribute("aria-label", "Bearbeiten");
+          ed.innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M11 2.5l2.5 2.5L6 12.5H3.5V10z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+          ed.addEventListener("click", () => startEdit(e.id));
+          const del = document.createElement("button"); del.type = "button"; del.className = "icon del"; del.setAttribute("aria-label", "Löschen");
+          del.innerHTML = `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.5h5.8l.6-8.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>`;
+          del.addEventListener("click", () => { confirmId = e.id; render(); });
+          r.append(ed, del);
+        }
+      }
+      box.appendChild(row);
+    });
+  }
+
+  // ---------- Formular ----------
+  function renderKatPick() {
+    const box = $("katPick");
+    if (!kats().some(k => k.id === form.kat)) form.kat = kats()[0].id;
+    box.innerHTML = kats().map(k => `<input type="radio" name="kat" id="kp_${esc(k.id)}" value="${esc(k.id)}" ${k.id === form.kat ? "checked" : ""}><label for="kp_${esc(k.id)}" style="--c:${safeColor(k.farbe)}"><i style="background:${safeColor(k.farbe)}"></i>${esc(k.name)}</label>`).join("");
+    box.querySelectorAll("input").forEach(i => i.addEventListener("change", () => { form.kat = i.value; if (!editingId) suggestFor(form.kat); }));
+  }
+  function renderDurPick() {
+    const box = $("durPick");
+    box.innerHTML = DURS.map(h => { const m = h * 60; return `<input type="radio" name="dur" id="dp_${m}" value="${m}" ${form.dauer === m && !form.custom ? "checked" : ""}><label for="dp_${m}">${nfH.format(h)}<small>h</small></label>`; }).join("");
+    box.querySelectorAll("input").forEach(i => i.addEventListener("change", () => { form.dauer = Number(i.value); form.custom = ""; $("fCustom").value = ""; }));
+  }
+  $("fCustom").addEventListener("input", () => {
+    form.custom = $("fCustom").value;
+    const v = parseFloat(String(form.custom).replace(",", "."));
+    if (isFinite(v) && v > 0) { form.dauer = Math.round(v * 60); $("durPick").querySelectorAll("input").forEach(i => i.checked = false); }
+  });
+  $("useTime").addEventListener("change", () => { form.useTime = $("useTime").checked; syncTimeBox(); });
+  function syncTimeBox() { $("timeBox").hidden = !form.useTime; $("durBox").hidden = form.useTime; $("useTime").checked = form.useTime; }
+  ["fStart", "fEnd", "fNote"].forEach(id => $(id).addEventListener("input", () => { form.beginn = $("fStart").value; form.ende = $("fEnd").value; form.notiz = $("fNote").value; }));
+
+  function suggestFor(kat) {
+    const last = entries.filter(e => katOf(e) === kat).sort((a, b) => (b.datum + (b.beginn || "")).localeCompare(a.datum + (a.beginn || "")))[0];
+    if (!last) return;
+    form.dauer = dur(last); form.custom = DURS.includes(form.dauer / 60) ? "" : nfH.format(form.dauer / 60).replace(",", ".");
+    if (last.beginn && last.ende) { form.beginn = last.beginn; form.ende = last.ende; }
+    fillForm();
+  }
+  function fillForm() {
+    renderKatPick(); renderDurPick();
+    $("fCustom").value = form.custom; $("fStart").value = form.beginn; $("fEnd").value = form.ende; $("fNote").value = form.notiz;
+    syncTimeBox();
+  }
+  function resetForm() {
+    editingId = null;
+    form.notiz = "";
+    $("formTitle").textContent = "Einheit hinzufügen"; $("saveBtn").textContent = "Eintragen"; $("cancelEdit").hidden = true; $("fErr").hidden = true;
+    fillForm();
+  }
+  function startEdit(id) {
+    const e = entries.find(x => x.id === id); if (!e) return;
+    editingId = id; confirmId = null;
+    form.kat = katOf(e); form.dauer = dur(e); form.useTime = !!(e.beginn && e.ende);
+    form.custom = DURS.includes(form.dauer / 60) ? "" : nfH.format(form.dauer / 60).replace(",", ".");
+    form.beginn = e.beginn || form.beginn; form.ende = e.ende || form.ende; form.notiz = e.notiz || "";
+    $("formTitle").textContent = "Einheit bearbeiten"; $("saveBtn").textContent = "Änderung speichern"; $("cancelEdit").hidden = false;
+    fillForm(); render();
+    $("form").scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+  $("cancelEdit").addEventListener("click", () => { resetForm(); render(); });
+  $("form").addEventListener("submit", async ev => {
+    ev.preventDefault(); if (readOnly) return;
+    const err = $("fErr");
+    const e = { id: editingId || ("e" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6)), datum: sel, kat: form.kat, notiz: form.notiz.trim() };
+    if (form.useTime) {
+      const d = mins(form.ende) - mins(form.beginn);
+      if (!form.beginn || !form.ende) { err.textContent = "Bitte Beginn und Ende angeben."; err.hidden = false; return; }
+      if (!(d > 0)) { err.textContent = "Das Ende muss nach dem Beginn liegen."; err.hidden = false; return; }
+      e.beginn = form.beginn; e.ende = form.ende; e.dauer = d;
+    } else {
+      if (!(form.dauer > 0)) { err.textContent = "Bitte eine Dauer wählen."; err.hidden = false; return; }
+      e.dauer = form.dauer;
+    }
+    err.hidden = true;
+    const wasEdit = !!editingId; const btn = $("saveBtn"); btn.disabled = true;
+    try {
+      await store.put(e);
+      toast(wasEdit ? "Änderung gespeichert" : `${katById(e.kat).name}: ${H(e.dauer)} h am ${fmtD(e.datum)} eingetragen`);
+      resetForm(); render();
+    } catch (x) { handleWriteError(x); }
+    finally { btn.disabled = false; }
+  });
+
+  // ---------- Anzeigetafel ----------
+  function renderBoard() {
+    const p = period(), t = todayIso();
+    const list = entries.filter(e => e.datum >= p.start && e.datum <= p.end);
+    $("pLabel").textContent = p.label;
+    $("toToday").hidden = periodFor(t, settings.modus).key === p.key;
+    const chip = $("pChip"); const done = settings.abgerechnet[p.key]; const left = dayDiff(t, p.deadline);
+    chip.className = "chip";
+    if (done) { chip.classList.add("ok"); chip.textContent = `✓ Abgerechnet am ${fmtD(done)}`; }
+    else if (left < 0) { chip.classList.add("bad"); chip.textContent = `Abrechnung überfällig seit ${fmtD(p.deadline)}`; }
+    else if (left === 0) { chip.classList.add("warn"); chip.textContent = "Abrechnung heute fällig"; }
+    else if (left === 1) { chip.classList.add("warn"); chip.textContent = `Abrechnung morgen fällig (${fmtD(p.deadline)})`; }
+    else if (left <= 14) { chip.classList.add("warn"); chip.textContent = `Abrechnung in ${left} Tagen (${fmtD(p.deadline)})`; }
+    else { chip.classList.add("info"); chip.textContent = `Abrechnung zum ${fmtD(p.deadline)} · noch ${left} Tage`; }
+
+    const total = list.reduce((s, e) => s + dur(e), 0);
+    const byK = {}; list.forEach(e => { const k = katOf(e); byK[k] = byK[k] || { m: 0, n: 0 }; byK[k].m += dur(e); byK[k].n++; });
+    let amt = 0, anyRate = false;
+    kats().forEach(k => { if (k.satz) { anyRate = true; amt += ((byK[k.id] || {}).m || 0) / 60 * k.satz; } });
+    $("sH").innerHTML = `${nf1.format(total / 60)}<small>Std</small>`;
+    $("sN").textContent = list.length;
+    const r2 = Math.round(amt * 100) / 100;
+    $("sA").innerHTML = anyRate ? `${Number.isInteger(r2) ? nfH.format(r2) : eur0.format(r2)}<small>€</small>` : "–";
+
+    const all = kats().slice();
+    Object.keys(byK).forEach(id => { if (!all.some(k => k.id === id)) all.push(katById(id)); });
+    $("mixbar").innerHTML = total ? all.filter(k => byK[k.id]).map(k => `<i style="background:${safeColor(k.farbe)};flex:${byK[k.id].m}"></i>`).join("") : "";
+    $("legend").innerHTML = all.map(k => {
+      const v = byK[k.id] || { m: 0, n: 0 };
+      const money = k.satz && v.m ? ` · ${eur.format(v.m / 60 * k.satz)}` : "";
+      return `<div class="lg${v.m ? "" : " zero"}"><span class="sw" style="background:${safeColor(k.farbe)}"></span><span class="n">${esc(k.name)}</span><span class="h"><b>${nf1.format(v.m / 60)} h</b> · ${v.n}×${money}</span></div>`;
+    }).join("");
+    const db = $("doneBtn"); db.textContent = done ? "Abgerechnet ✓ · zurücknehmen" : "Als abgerechnet markieren"; db.classList.toggle("on", !!done);
+  }
+  function shiftPeriod(dir) {
+    const p = period();
+    const target = periodFor(dir < 0 ? addDays(p.start, -1) : addDays(p.end, 1), settings.modus);
+    const t = todayIso();
+    selectDay(t >= target.start && t <= target.end ? t : (dir < 0 ? target.end : target.start));
+  }
+  $("prevP").addEventListener("click", () => shiftPeriod(-1));
+  $("nextP").addEventListener("click", () => shiftPeriod(1));
+  $("toToday").addEventListener("click", () => selectDay(todayIso()));
+  $("doneBtn").addEventListener("click", () => {
+    if (readOnly) return; const k = period().key;
+    if (settings.abgerechnet[k]) delete settings.abgerechnet[k]; else settings.abgerechnet[k] = todayIso();
+    render(); saveSettings();
+  });
+
+  // ---------- Zeitraum-Tabelle ----------
+  function periodList() { const p = period(); return entries.filter(e => e.datum >= p.start && e.datum <= p.end).sort((a, b) => (a.datum + (a.beginn || "")).localeCompare(b.datum + (b.beginn || ""))); }
+  function renderTable() {
+    const list = periodList(); const box = $("pTable");
+    $("plistHint").textContent = list.length ? "Zeile antippen, um den Tag zu öffnen" : "";
+    if (!list.length) { box.innerHTML = `<div class="dempty">Noch keine Einträge in diesem Zeitraum. Wähle oben im Kalender einen Tag und trag die Stunden ein.</div>`; return; }
+    const total = list.reduce((s, e) => s + dur(e), 0);
+    box.innerHTML = `<table><thead><tr><th>Datum</th><th>Kategorie</th><th>Uhrzeit</th><th>Notiz</th><th class="r">Std</th></tr></thead><tbody>${list.map(e => { const k = katById(katOf(e)); return `<tr class="click" data-d="${e.datum}"><td class="num">${WDS[toDate(e.datum).getDay()]} ${fmtD(e.datum)}</td><td><span class="kt"><i style="background:${safeColor(k.farbe)}"></i>${esc(k.name)}</span></td><td class="num">${e.beginn && e.ende ? `${e.beginn}–${e.ende}` : "–"}</td><td>${esc(e.notiz || "")}</td><td class="r">${nf1.format(dur(e) / 60)}</td></tr>`; }).join("")}</tbody><tfoot><tr><td colspan="4">Summe</td><td class="r">${nf1.format(total / 60)}</td></tr></tfoot></table>`;
+    box.querySelectorAll("tr.click").forEach(tr => tr.addEventListener("click", () => { selectDay(tr.dataset.d); window.scrollTo({ top: 0, behavior: "smooth" }); }));
+  }
+
+  // ---------- Einstellungen ----------
+  const nameTimers = {}, rateTimers = {};
+  function renderKatRows() {
+    const used = new Set(entries.map(katOf));
+    const box = $("katRows"); box.innerHTML = "";
+    kats().forEach(k => {
+      const row = document.createElement("div"); row.className = "katrow";
+      row.innerHTML = `<div class="swatches" role="group" aria-label="Farbe für ${esc(k.name)}">${SWATCH.map(c => `<button type="button" style="background:${c}" data-c="${c}" aria-label="Farbe ${c}" aria-pressed="${c.toLowerCase() === safeColor(k.farbe).toLowerCase()}"></button>`).join("")}</div>
+        <input type="text" id="kn_${esc(k.id)}" value="${esc(k.name)}" maxlength="40" aria-label="Name der Kategorie">
+        <div class="ratewrap"><input type="text" id="kr_${esc(k.id)}" inputmode="decimal" value="${k.satz != null ? nfH.format(k.satz) : ""}" placeholder="Satz" aria-label="Stundensatz für ${esc(k.name)}"><span>€/h</span></div>
+        <button type="button" class="icon del" aria-label="Kategorie löschen" ${used.has(k.id) || kats().length < 2 ? "disabled title=\"Wird verwendet\"" : ""}><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 4.5h10M6.5 4.5V3h3v1.5M4.5 4.5l.6 8.5h5.8l.6-8.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></button>`;
+      const cur = () => settings.kategorien.find(x => x.id === k.id);
+      row.querySelectorAll(".swatches button").forEach(b => b.addEventListener("click", () => { const c = cur(); if (!c) return; c.farbe = b.dataset.c; render(); renderKatRows(); saveSettings(); }));
+      const ni = row.querySelector(`#kn_${CSS.escape(k.id)}`);
+      ni.addEventListener("input", () => { clearTimeout(nameTimers[k.id]); nameTimers[k.id] = setTimeout(() => { nameTimers[k.id] = null; const c = cur(); const v = ni.value.trim(); if (!c || !v) return; c.name = v; render(); saveSettings("Kategorie gespeichert"); }, 700); });
+      const ri = row.querySelector(`#kr_${CSS.escape(k.id)}`);
+      ri.addEventListener("input", () => { clearTimeout(rateTimers[k.id]); rateTimers[k.id] = setTimeout(() => { rateTimers[k.id] = null; const c = cur(); if (!c) return; const v = parseFloat(String(ri.value).replace(",", ".")); c.satz = isFinite(v) && v > 0 ? v : null; render(); saveSettings("Stundensatz gespeichert"); }, 700); });
+      const del = row.querySelector(".icon.del");
+      del.addEventListener("click", () => { if (del.disabled) return; settings.kategorien = kats().filter(x => x.id !== k.id); render(); renderKatRows(); saveSettings("Kategorie gelöscht"); });
+      box.appendChild(row);
+    });
+  }
+  $("addKat").addEventListener("click", () => {
+    if (!settings.kategorien || !settings.kategorien.length) settings.kategorien = DEFAULT_KATS.map(k => ({ ...k }));
+    const usedC = new Set(settings.kategorien.map(k => k.farbe.toLowerCase()));
+    const farbe = SWATCH.find(c => !usedC.has(c.toLowerCase())) || SWATCH[SWATCH.length - 1];
+    const k = { id: "k" + Math.random().toString(36).slice(2, 8), name: "Neue Kategorie", farbe, satz: null };
+    settings.kategorien.push(k); render(); renderKatRows(); saveSettings();
+    const inp = document.getElementById("kn_" + k.id); if (inp) { inp.focus(); inp.select(); }
+  });
+  ["sName", "sVerein"].forEach(id => $(id).addEventListener("input", () => {
+    clearTimeout(rateTimers["_" + id]);
+    rateTimers["_" + id] = setTimeout(() => { rateTimers["_" + id] = null; settings.name = $("sName").value.trim(); settings.verein = $("sVerein").value.trim(); saveSettings("Gespeichert"); }, 700);
+  }));
+  $("sMode").addEventListener("change", () => { settings.modus = $("sMode").value; render(); saveSettings("Zeitraum-Modus gespeichert"); });
+  function applySettings() {
+    $("sMode").value = settings.modus;
+    const a = document.activeElement;
+    if (a !== $("sName")) $("sName").value = settings.name || "";
+    if (a !== $("sVerein")) $("sVerein").value = settings.verein || "";
+    fillForm();
+  }
+
+  // ---------- Export ----------
+  function summaryText() {
+    const p = period(), list = periodList(); const lines = [`Trainingsnachweis ${p.label}`, ""];
+    kats().forEach(k => {
+      const a = list.filter(e => katOf(e) === k.id); if (!a.length) return;
+      const m = a.reduce((s, e) => s + dur(e), 0);
+      lines.push(`${k.name}: ${a.length} Einheiten, ${nf1.format(m / 60)} Std${k.satz ? ` × ${eur.format(k.satz)} = ${eur.format(m / 60 * k.satz)}` : ""}`);
+      a.forEach(e => lines.push(`  ${WDS[toDate(e.datum).getDay()]} ${fmtD(e.datum)}  ${e.beginn && e.ende ? e.beginn + "–" + e.ende + "  " : ""}(${nf1.format(dur(e) / 60)} Std)${e.notiz ? "  " + e.notiz : ""}`));
+      lines.push("");
+    });
+    const total = list.reduce((s, e) => s + dur(e), 0);
+    lines.push(list.length ? `Gesamt: ${list.length} Einheiten, ${nf1.format(total / 60)} Std` : "Keine Einheiten in diesem Zeitraum.");
+    let amt = 0, any = false; kats().forEach(k => { if (k.satz) { any = true; amt += list.filter(e => katOf(e) === k.id).reduce((s, e) => s + dur(e), 0) / 60 * k.satz; } });
+    if (any && list.length) lines.push(`Betrag: ${eur.format(amt)}`);
+    return lines.join("\n").trim();
+  }
+  function csvText() {
+    const q = s => `"${String(s).replace(/"/g, '""')}"`;
+    const rows = [["Datum", "Wochentag", "Kategorie", "Beginn", "Ende", "Dauer (Std)", "Stundensatz", "Betrag", "Notiz"].map(q).join(";")];
+    periodList().forEach(e => { const k = katById(katOf(e)); const h = dur(e) / 60; rows.push([fmtD(e.datum), WDS[toDate(e.datum).getDay()], k.name, e.beginn || "", e.ende || "", nf1.format(h), k.satz ? eur0.format(k.satz) : "", k.satz ? eur0.format(h * k.satz) : "", e.notiz || ""].map(q).join(";")); });
+    return "﻿" + rows.join("\r\n");
+  }
+  function showFallback(t) { const ta = $("copyFallback"); ta.value = t; ta.hidden = false; ta.focus(); ta.select(); }
+  // ---------- Native Brücke ----------
+  const pending = {}; let seq = 0;
+  window.__nativeDone = (id, status, data) => { const f = pending[id]; if (f) { delete pending[id]; f({ status, data }); } };
+  const callNative = (fn, ...args) => new Promise(res => { const id = "n" + (++seq); pending[id] = res; try { NATIVE[fn](id, ...args); } catch (e) { delete pending[id]; res({ status: "error" }); } });
+  const b64FromBlob = blob => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(",")[1] || ""); r.onerror = () => rej(r.error); r.readAsDataURL(blob); });
+  async function exportFile(mode, filename, mime, blob) {
+    if (NATIVE) { const b64 = await b64FromBlob(blob); return (await callNative(mode === "share" ? "shareFile" : "saveFile", filename, mime, b64)).status; }
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = filename; document.body.appendChild(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500); return "saved";
+  }
+  function reportExport(status, what) {
+    if (status === "saved") toast(`${what} gespeichert`);
+    else if (status === "busy") toast("Bitte erst den offenen Dialog abschließen.");
+    else if (status === "error") toast(`${what} konnte nicht gespeichert werden. Bitte erneut versuchen.`);
+  }
+  $("csvBtn").addEventListener("click", async () => {
+    const p = period();
+    try { reportExport(await exportFile("save", `Trainingsnachweis_${p.start}_bis_${p.end}.csv`, "text/csv", new Blob([csvText()], { type: "text/csv" })), "CSV"); }
+    catch (x) { toast("CSV konnte nicht erstellt werden."); }
+  });
+  $("copyBtn").addEventListener("click", () => {
+    const t = summaryText();
+    if (NATIVE) { try { NATIVE.copyText(t); toast("Zusammenfassung kopiert"); return; } catch (e) {} }
+    try { navigator.clipboard.writeText(t).then(() => toast("Zusammenfassung kopiert"), () => { showFallback(t); toast("Text markiert. Mit Strg+C kopieren."); }); }
+    catch (e) { showFallback(t); toast("Text markiert. Mit Strg+C kopieren."); }
+  });
+
+  // ---------- PDF ----------
+  const JSPDF = "lib/jspdf.umd.min.js";
+  const AUTOTABLE = "lib/jspdf.plugin.autotable.min.js";
+  let pdfReady = null;
+  const loadScript = src => new Promise((res, rej) => { const sc = document.createElement("script"); sc.src = src; sc.onload = res; sc.onerror = () => rej(new Error("load")); document.head.appendChild(sc); });
+  const getPdf = () => pdfReady || (pdfReady = loadScript(JSPDF).then(() => loadScript(AUTOTABLE)).then(() => window.jspdf.jsPDF).catch(e => { pdfReady = null; throw e; }));
+  const rgb = hex => { const h = safeColor(hex).slice(1); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)); };
+
+  async function buildPdf() {
+    const jsPDF = await getPdf();
+    const p = period(), list = periodList();
+    const doc = new jsPDF({ unit: "mm", format: "a4" });
+    const W = 210, M = 16;
+    const NAVY = [27, 42, 74], ORANGE = [232, 113, 28], MUTED = [93, 104, 128], INK = [21, 33, 59], SOFT = [244, 246, 250], LINE = [217, 222, 232];
+    // Kopf
+    doc.setFillColor(...NAVY); doc.rect(0, 0, W, 34, "F");
+    doc.setFillColor(...ORANGE); doc.rect(0, 34, W, 1.6, "F");
+    doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold"); doc.setFontSize(21);
+    doc.text("TRAININGSNACHWEIS", M, 16.5);
+    doc.setFont("helvetica", "normal"); doc.setFontSize(11);
+    doc.text(`Abrechnungszeitraum ${fmtD(p.start)} – ${fmtD(p.end)}`, M, 25);
+    const who = [settings.name, settings.verein].filter(Boolean);
+    if (who.length) { doc.setFontSize(10); doc.setFont("helvetica", "bold"); doc.text(who[0], W - M, 16.5, { align: "right" }); if (who[1]) { doc.setFont("helvetica", "normal"); doc.setTextColor(200, 208, 224); doc.text(who[1], W - M, 22.5, { align: "right" }); } }
+    // Eckdaten
+    const total = list.reduce((s, e) => s + dur(e), 0);
+    let amt = 0, anyRate = false;
+    kats().forEach(k => { if (k.satz) { anyRate = true; amt += list.filter(e => katOf(e) === k.id).reduce((s, e) => s + dur(e), 0) / 60 * k.satz; } });
+    const facts = [["Abrechnung zum", fmtD(p.deadline)], ["Einheiten", String(list.length)], ["Stunden", nf1.format(total / 60)], ["Betrag", anyRate ? eur.format(amt) : "–"]];
+    const cw = (W - 2 * M) / facts.length;
+    facts.forEach(([l, v], i) => {
+      const x = M + i * cw;
+      doc.setDrawColor(...(i === 3 ? ORANGE : LINE)); doc.setLineWidth(0.6); doc.line(x, 44, x + cw - 4, 44);
+      doc.setTextColor(...MUTED); doc.setFont("helvetica", "bold"); doc.setFontSize(7.5); doc.text(l.toUpperCase(), x, 49.5);
+      doc.setTextColor(...(i === 3 ? ORANGE : INK)); doc.setFontSize(15); doc.text(v, x, 57);
+    });
+    // Übersicht je Kategorie
+    const used = kats().filter(k => list.some(e => katOf(e) === k.id));
+    list.forEach(e => { if (!used.some(k => k.id === katOf(e))) used.push(katById(katOf(e))); });
+    const sumRows = used.map(k => { const a = list.filter(e => katOf(e) === k.id); const m = a.reduce((s, e) => s + dur(e), 0); return { k, row: [k.name, String(a.length), nf1.format(m / 60), k.satz ? eur.format(k.satz) : "–", k.satz ? eur.format(m / 60 * k.satz) : "–"] }; });
+    doc.setTextColor(...INK); doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.text("Übersicht nach Kategorie", M, 70);
+    const dot = (data, katList) => { if (data.section === "body" && data.column.index === 0 && katList[data.row.index]) { doc.setFillColor(...rgb(katList[data.row.index].farbe)); doc.circle(data.cell.x + 3.2, data.cell.y + data.cell.height / 2, 1.2, "F"); } };
+    const tableStyle = { theme: "plain", margin: { left: M, right: M }, styles: { font: "helvetica", fontSize: 9, textColor: INK, cellPadding: { top: 2.2, bottom: 2.2, left: 2, right: 2 }, lineColor: LINE, lineWidth: { bottom: 0.2 } }, headStyles: { fillColor: NAVY, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 8, lineWidth: 0 }, footStyles: { fillColor: SOFT, textColor: INK, fontStyle: "bold", lineWidth: 0 } };
+    doc.autoTable(Object.assign({}, tableStyle, {
+      startY: 73,
+      head: [["Kategorie", "Einheiten", "Stunden", "Satz", "Betrag"]],
+      body: sumRows.length ? sumRows.map(r => r.row) : [["Keine Einheiten in diesem Zeitraum", "", "", "", ""]],
+      foot: [["Gesamt", String(list.length), nf1.format(total / 60), "", anyRate ? eur.format(amt) : "–"]],
+      columnStyles: { 0: { cellPadding: { top: 2.2, bottom: 2.2, left: sumRows.length ? 6.5 : 2, right: 2 } }, 1: { halign: "right" }, 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" } },
+      didParseCell: d => { if (d.section !== "body" && d.column.index > 0) d.cell.styles.halign = "right"; },
+      didDrawCell: d => dot(d, sumRows.map(r => r.k))
+    }));
+    // Einzelnachweis
+    let y = doc.lastAutoTable.finalY + 11;
+    doc.setTextColor(...INK); doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.text("Einzelnachweis", M, y);
+    const detK = list.map(e => katById(katOf(e)));
+    doc.autoTable(Object.assign({}, tableStyle, {
+      startY: y + 3,
+      head: [["Kategorie", "Datum", "Tag", "Uhrzeit", "Notiz", "Std", "Betrag"]],
+      body: list.length ? list.map((e, i) => { const k = detK[i], h = dur(e) / 60; return [k.name, fmtD(e.datum), WDS[toDate(e.datum).getDay()], e.beginn && e.ende ? `${e.beginn}–${e.ende}` : "–", e.notiz || "", nf1.format(h), k.satz ? eur.format(h * k.satz) : "–"]; }) : [["–", "", "", "", "", "", ""]],
+      foot: [["Summe", "", "", "", "", nf1.format(total / 60), anyRate ? eur.format(amt) : "–"]],
+      columnStyles: { 0: { cellWidth: 38, cellPadding: { top: 2.2, bottom: 2.2, left: list.length ? 6.5 : 2, right: 2 } }, 1: { cellWidth: 22 }, 2: { cellWidth: 10 }, 3: { cellWidth: 22 }, 5: { halign: "right", cellWidth: 13 }, 6: { halign: "right", cellWidth: 22 } },
+      didParseCell: d => { if (d.section !== "body" && d.column.index >= 5) d.cell.styles.halign = "right"; },
+      didDrawCell: d => dot(d, detK)
+    }));
+    // Unterschriften
+    y = doc.lastAutoTable.finalY + 22;
+    if (y > 262) { doc.addPage(); y = 34; }
+    doc.setDrawColor(...MUTED); doc.setLineWidth(0.3); doc.setTextColor(...MUTED); doc.setFont("helvetica", "normal"); doc.setFontSize(8);
+    doc.text("Die Angaben sind vollständig und richtig.", M, y - 12);
+    const sw = (W - 2 * M - 12) / 2;
+    [["Ort, Datum, Unterschrift " + (settings.name ? settings.name : "Übungsleiter/in"), M], ["Bestätigung " + (settings.verein || "Verein / Abteilung"), M + sw + 12]].forEach(([t, x]) => { doc.line(x, y, x + sw, y); doc.text(t, x, y + 4.5); });
+    // Fußzeile
+    const n = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= n; i++) {
+      doc.setPage(i); doc.setFontSize(7.5); doc.setTextColor(...MUTED);
+      doc.text(`Trainingsnachweis ${fmtD(p.start)} – ${fmtD(p.end)} · erstellt am ${fmtD(todayIso())}`, M, 289);
+      doc.text(`Seite ${i} von ${n}`, W - M, 289, { align: "right" });
+    }
+    return doc.output("blob");
+  }
+
+  async function pdfExport(mode, btn) {
+    const p = period();
+    btn.disabled = true; const label = btn.lastChild.textContent; btn.lastChild.textContent = "PDF wird erstellt…";
+    try {
+      const blob = await buildPdf();
+      const st = await exportFile(mode, `Trainingsnachweis_${p.start}_bis_${p.end}.pdf`, "application/pdf", blob);
+      reportExport(st, "PDF");
+    } catch (x) {
+      toast(x && x.message === "load" ? "PDF-Modul konnte nicht geladen werden. App neu starten." : "PDF konnte nicht erstellt werden. Bitte erneut versuchen.");
+    } finally { btn.disabled = false; btn.lastChild.textContent = label; }
+  }
+  $("pdfBtn").addEventListener("click", () => pdfExport("save", $("pdfBtn")));
+  $("pdfShare").addEventListener("click", () => pdfExport(NATIVE ? "share" : "save", $("pdfShare")));
+
+  // ---------- Backup ----------
+  $("bkSave").addEventListener("click", async () => {
+    const data = { app: "trainingsnachweis", version: 1, exportiert: todayIso(), einheiten: entries, einstellungen: settings };
+    try { reportExport(await exportFile("save", `Trainingsnachweis_Backup_${todayIso()}.json`, "application/json", new Blob([JSON.stringify(data, null, 1)], { type: "application/json" })), "Backup"); }
+    catch (x) { toast("Backup konnte nicht erstellt werden."); }
+  });
+  function importBackup(text) {
+    let d; try { d = JSON.parse(text); } catch (e) { toast("Die Datei ist kein gültiges Backup."); return; }
+    const list = Array.isArray(d && d.einheiten) ? d.einheiten : null;
+    if (!list) { toast("Die Datei ist kein gültiges Backup."); return; }
+    const ok = list.filter(e => e && typeof e.id === "string" && /^\d{4}-\d{2}-\d{2}$/.test(e.datum || "") && dur(e) > 0);
+    const map = new Map(entries.map(e => [e.id, e])); ok.forEach(e => map.set(e.id, e));
+    entries = Array.from(map.values()); lsSet(LS_E, entries);
+    if (d.einstellungen && typeof d.einstellungen === "object") {
+      const imp = normSettings(d.einstellungen);
+      const have = new Set(settings.kategorien.map(k => k.id));
+      imp.kategorien.forEach(k => { if (!have.has(k.id)) settings.kategorien.push(k); });
+      settings.abgerechnet = Object.assign({}, imp.abgerechnet, settings.abgerechnet);
+      if (!settings.name) settings.name = imp.name; if (!settings.verein) settings.verein = imp.verein;
+      lsSet(LS_S, settings);
+    }
+    applySettings(); render(); toast(`Backup geladen: ${ok.length} Einheiten übernommen`);
+  }
+  $("bkLoad").addEventListener("click", async () => {
+    if (NATIVE) { const r = await callNative("openBackup"); if (r.status === "ok" && r.data) importBackup(r.data); else if (r.status === "error") toast("Datei konnte nicht gelesen werden."); else if (r.status === "busy") toast("Bitte erst den offenen Dialog abschließen."); return; }
+    $("bkFile").value = ""; $("bkFile").click();
+  });
+  $("bkFile").addEventListener("change", () => { const f = $("bkFile").files[0]; if (!f) return; const r = new FileReader(); r.onload = () => importBackup(String(r.result)); r.readAsText(f); });
+
+  let toastT;
+  function toast(t) { const el = $("toast"); el.textContent = t; el.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove("show"), 2600); }
+
+  // ---------- Render ----------
+  function render() {
+    const map = dayMap();
+    renderBoard(); renderCalendar(map); renderSheet(map); renderTable();
+    const a = document.activeElement;
+    if (!(a && a.closest && a.closest("#katRows"))) renderKatRows();
+  }
+
+  // ---------- Start ----------
+  renderWeekdays(); fillForm(); render();
+  store = localStore; store.start();
+})();
+</script>
+</body>
+</html>

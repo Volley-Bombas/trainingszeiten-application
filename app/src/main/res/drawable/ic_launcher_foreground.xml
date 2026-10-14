@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Volleyball in Orange, innerhalb der 66dp-Sicherheitszone -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#E8711C"
+        android:strokeWidth="3.6"
+        android:pathData="M54,32a22,22 0,1 1,0 44a22,22 0,1 1,0 -44z" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#E8711C"
+        android:strokeWidth="3.6"
+        android:strokeLineCap="round"
+        android:pathData="M54,32c-6.47,9.06 -6.47,19.41 0,22M54,54c9.06,-3.88 18.12,-1.29 22,5.18M54,54c-2.59,9.06 -10.35,15.53 -19.41,14.24" />
+</vector>

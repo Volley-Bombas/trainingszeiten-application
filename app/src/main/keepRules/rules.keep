@@ -1,0 +1,7 @@
+# Projektspezifische R8-Regeln.
+# Die WebView ruft die Methoden der NativeBridge per Reflection auf (window.Android.*).
+# Ohne diese Regel entfernt oder umbenennt R8 sie im Release-Build.
+-keepattributes JavascriptInterface
+-keepclassmembers class * {
+    @android.webkit.JavascriptInterface <methods>;
+}
