@@ -264,6 +264,8 @@ details.settings summary { padding: 15px 0; cursor: pointer; font-weight: 700; }
   .katrow .swatches { grid-column: 1 / -1; }
 }
 @media (prefers-reduced-motion: reduce) { .toast, .day { transition: none; } }
+.cal-head h3 { white-space: nowrap; }
+@media (max-width: 400px) { .cal-head h3 { font-size: 22px; } .cal-head { gap: 6px; } .tbtn { padding: 0 10px; } .ibtn { width: 34px; } }
 </style>
 </head>
 <body>
@@ -381,7 +383,7 @@ details.settings summary { padding: 15px 0; cursor: pointer; font-weight: 700; }
   </section>
 
   <details class="settings" id="settings">
-    <summary>Einstellungen · Kategorien &amp; Zeitraum</summary>
+    <summary>Einstellungen · Kategorien, Backup &amp; Info</summary>
     <div class="settings-body">
       <div class="field">
         <span class="label">Kategorien</span>
@@ -408,6 +410,11 @@ details.settings summary { padding: 15px 0; cursor: pointer; font-weight: 700; }
           <option value="A">16. bis 15. (endet 15.01. / 15.04. / 15.07. / 15.10.)</option>
           <option value="B">Kalenderquartal, Abrechnung bis zum 15. danach</option>
         </select>
+      </div>
+      <div class="field" style="max-width:720px">
+        <span class="label">Datenschutz &amp; Info</span>
+        <span class="hint">Trainingsnachweis speichert alle Einträge ausschließlich auf diesem Gerät. Es gibt kein Konto, keine Werbung, kein Tracking und keine Internetverbindung. Daten verlassen das Gerät nur, wenn du selbst eine Datei speicherst oder teilst. Wenn du die App deinstallierst oder den App-Speicher löschst, sind die Einträge weg. Sichere sie vorher als Backup.</span>
+        <span class="hint num" id="appVersion"></span>
       </div>
     </div>
   </details>
@@ -975,6 +982,7 @@ details.settings summary { padding: 15px 0; cursor: pointer; font-weight: 700; }
 
   // ---------- Start ----------
   renderWeekdays(); fillForm(); render();
+  try { const v = NATIVE && NATIVE.appVersion ? NATIVE.appVersion() : ""; if (v) $("appVersion").textContent = "Version " + v; } catch (e) {}
   store = localStore; store.start();
 })();
 </script>

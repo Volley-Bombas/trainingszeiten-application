@@ -238,6 +238,10 @@ class MainActivity : AppCompatActivity() {
         }
 
         @JavascriptInterface
+        fun appVersion(): String =
+            runCatching { packageManager.getPackageInfo(packageName, 0).versionName }.getOrNull() ?: ""
+
+        @JavascriptInterface
         fun copyText(text: String) {
             runOnUiThread {
                 getSystemService(ClipboardManager::class.java)

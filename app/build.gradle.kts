@@ -1,6 +1,16 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
 }
+
+// Zugangsdaten für den Upload-Schlüssel liegen in keystore.properties (nicht im Git).
+// Vorlage: keystore.properties.example
+val keystoreProperties = Properties().apply {
+    val file = rootProject.file("keystore.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+val hasReleaseKey = keystoreProperties.getProperty("storeFile") != null
 
 android {
     namespace = "de.buchwald.trainingszeiten"
@@ -12,10 +22,22 @@ android {
         applicationId = "de.buchwald.trainingszeiten"
         minSdk = 29
         targetSdk = 37
+        // Bei jedem Upload in die Play Console versionCode um 1 erhöhen
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        if (hasReleaseKey) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
     }
 
     buildTypes {
@@ -23,6 +45,9 @@ android {
             optimization {
                 enable = true
                 packageScope = setOf("androidx.**", "kotlin.**", "kotlinx.**")
+            }
+            if (hasReleaseKey) {
+                signingConfig = signingConfigs.getByName("release")
             }
         }
     }
