@@ -13,3 +13,9 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Signierung – niemals einchecken
+keystore.properties
+*.jks
+*.keystore
+/app/release
